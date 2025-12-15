@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Présence par QR Code</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 30px; }
-  h1, h2 { margin-bottom: 10px; }
-  .card { border: 1px solid #ccc; border-radius: 10px; padding: 20px; max-width: 500px; margin-bottom: 20px; }
-  input, button, select { width: 100%; padding: 10px; margin-top: 10px; }
-  #qrcode { margin-top: 20px; }
-  ul { padding-left: 20px; }
+body { font-family: Arial, sans-serif; margin: 30px; }
+h1, h2 { margin-bottom: 10px; }
+.card { border: 1px solid #ccc; border-radius: 10px; padding: 20px; max-width: 500px; margin-bottom: 20px; }
+input, button, select { width: 100%; padding: 10px; margin-top: 10px; }
+#qrcode { margin-top: 20px; }
+ul { padding-left: 20px; }
 </style>
 <!-- QRCode.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -19,123 +19,62 @@
 </head>
 <body>
 
+
 <h1>Gestion des présences par QR Code</h1>
 
-<div class="card" id="sectionCourse">
-  <h2>Créer un cours / générer QR code</h2>
-  <input id="courseName" placeholder="Nom du cours" />
-  <button onclick="generateQRCode()">Générer QR code</button>
-  <div id="qrcode"></div>
+
+<div class="card">
+<h2>Créer un cours / générer QR code</h2>
+<input id="courseName" placeholder="Nom du cours" />
+<button onclick="generateQRCode()">Générer QR code</button>
+<div id="qrcode"></div>
 </div>
 
-<div class="card" id="sectionStudent">
-  <h2>Élève - Pointer sa présence</h2>
-  <select id="selectCourse"></select>
-  <input id="studentName" placeholder="Votre nom" />
-  <button onclick="markPresence()">Je suis présent</button>
-  <p id="status"></p>
+
+<div class="card">
+<h2>Élève - Pointer sa présence</h2>
+<select id="selectCourse"></select>
+<input id="studentName" placeholder="Votre nom" />
+<button onclick="markPresence()">Je suis présent</button>
+<p id="status"></p>
 </div>
 
-<div class="card" id="sectionTeacher">
-  <h2>Professeur - Liste des présents</h2>
-  <select id="selectCoursePDF"></select>
-  <button onclick="downloadPDF()">Télécharger PDF</button>
-  <ul id="presentList"></ul>
+
+<div class="card">
+<h2>Professeur - Liste des présents</h2>
+<select id="selectCoursePDF"></select>
+<button onclick="downloadPDF()">Télécharger PDF</button>
+<ul id="presentList"></ul>
 </div>
+
 
 <script>
 // Stockage local des présences par cours
 let courses = {}; // { 'NomCours': ['Alice','Bob'] }
 
-// Détection du cours et rôle depuis l'URL
-const urlParams = new URLSearchParams(window.location.search);
-const courseFromURL = urlParams.get('course');
-const role = urlParams.get('role'); // 'student' ou 'teacher'
-
-// Masquer les sections selon le rôle
-if(role === 'student'){
-  document.getElementById('sectionTeacher').style.display = 'none';
-} else if(role === 'teacher'){
-  document.getElementById('sectionStudent').style.display = 'none';
-}
 
 function generateQRCode() {
-  const course = document.getElementById('courseName').value.trim();
-  if (!course) return alert('Veuillez entrer un nom de cours');
+const course = document.getElementById('courseName').value.trim();
+if (!course) return alert('Veuillez entrer un nom de cours');
 
-  const qrDiv = document.getElementById('qrcode');
-  qrDiv.innerHTML = '';
-  new QRCode(qrDiv, {
-    text: `https://robin-drt.github.io/QRcode/?course=${encodeURIComponent(course)}&role=student`,
-    width: 200,
-    height: 200
-  });
 
-  addCourse(course);
-}
+// créer le QR code (URL fictive locale)
+const qrDiv = document.getElementById('qrcode');
+qrDiv.innerHTML = '';
+new QRCode(qrDiv, {
+text: `http://exemple.com/course/${encodeURIComponent(course)}`,
+width: 200,
+height: 200
+});
 
-function addCourse(course) {
-  if (!courses[course]) {
-    courses[course] = [];
-    const sel = document.getElementById('selectCourse');
-    const opt = document.createElement('option'); opt.value = course; opt.textContent = course; sel.appendChild(opt);
-    const selPDF = document.getElementById('selectCoursePDF');
-    const opt2 = document.createElement('option'); opt2.value = course; opt2.textContent = course; selPDF.appendChild(opt2);
-  }
-  if(courseFromURL) document.getElementById('selectCourse').value = courseFromURL;
-}
 
-function markPresence() {
-  const course = document.getElementById('selectCourse').value;
-  const name = document.getElementById('studentName').value.trim();
-  const status = document.getElementById('status');
-  if (!course) return alert('Veuillez sélectionner un cours');
-  if (!name) return alert('Veuillez entrer votre nom');
-
-  if (courses[course].includes(name)) {
-    status.textContent = 'Vous avez déjà enregistré votre présence';
-    status.style.color = 'red';
-    return;
-  }
-
-  courses[course].push(name);
-  status.textContent = `Présence enregistrée pour ${name}`;
-  status.style.color = 'green';
-  updatePresentList();
-}
-
-function updatePresentList() {
-  const course = document.getElementById('selectCoursePDF').value;
-  const list = document.getElementById('presentList');
-  list.innerHTML = '';
-  if (!courses[course]) return;
-  courses[course].forEach((name,i) => {
-    const li = document.createElement('li');
-    li.textContent = `${i+1}. ${name}`;
-    list.appendChild(li);
-  });
-}
-
-document.getElementById('selectCoursePDF').addEventListener('change', updatePresentList);
-
-function downloadPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const course = document.getElementById('selectCoursePDF').value;
-  if (!course || !courses[course] || courses[course].length===0) return alert('Pas de présence pour ce cours');
-
-  doc.setFontSize(16);
-  doc.text(`Liste des présents - ${course}`,10,10);
-  let y = 20;
-  courses[course].forEach((name,i)=>{
-    doc.setFontSize(12);
-    doc.text(`${i+1}. ${name}`,10,y);
-    y+=8;
-  });
-  doc.save(`${course}_presence.pdf`);
-}
-
-if(courseFromURL) addCourse(courseFromURL);
+// ajouter le cours aux listes et stockage local
+if (!courses[course]) {
+courses[course] = [];
+const sel = document.getElementById('selectCourse');
+const opt = document.createElement('option'); opt.value = course; opt.textContent = course; sel.appendChild(opt);
+const selPDF = document.getElementById('selectCoursePDF');
+</html>
 </script>
 
 </body>
